@@ -1,49 +1,82 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+const Clothes = require('../models/clothes');
 
 const clothRouter = express.Router();
 
 clothRouter.use(bodyParser.json());
 
 clothRouter.route('/')
-    .all((req, res, next) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next();
-    })
     .get((req, res, next) => {
-        res.end('Will send all the clothes to you!');
+        Clothes.find(req.query)
+            .populate('comments.author')
+            .then((clothes) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(clothes);
+            }, (err) => next(err))
+    .catch((err) => next(err));
     })
     .post((req, res, next) => {
-        res.end('Will add the cloth: ' + req.body.name + ' with details: ' + req.body.description);
+        Clothes.create(req.body)
+            .then((cloth) => {
+                console.log('Cloth Created ', cloth);
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(cloth);
+            }, (err) => next(err))
+            .catch((err) => next(err));
     })
     .put((req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /clothes');
     })
     .delete((req, res, next) => {
-        res.end('Deleting all clothes');
+        Clothes.remove({})
+            .then((resp) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(resp);
+            }, (err) => next(err))
+        .catch((err) => next(err));
     });
 
 clothRouter.route('/:clothId')
-    .all((req, res, next) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next();
-    })
     .get((req, res, next) => {
-        res.end('Will send details of the cloth: ' + req.params.clothId + ' to you!');
+        Clothes.findById(req.params.clothId)
+            .populate('comments.author')
+            .then((cloth) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(cloth);
+            }, (err) => next(err))
+        .catch((err) => next(err));
     })
     .post((req, res, next) => {
-        res.end('Will add the cloth: ' + req.body.name + ' with details: ' + req.body.description);
+        res.statusCode = 403;
+        res.end('POST operation not supported on /clothes/' + req.params.clothId);
     })
     .put((req, res, next) => {
-        res.write('Updating the cloth: ' + req.params.clothId);
-        res.end('Will update the cloth: ' + req.body.name +
-            ' with details: ' + req.body.description);
+        Clothes.findByIdAndUpdate(req.params.clothId, {
+            $set: req.body
+        }, { new: true })
+            .then((cloth) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(cloth);
+            }, (err) => next(err))
+         .catch((err) => next(err));
     })
     .delete((req, res, next) => {
-        res.end('Deleting cloth: ' + req.params.clothId);
+        Clothes.findByIdAndRemove(req.params.clothId)
+            .then((resp) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(resp);
+            }, (err) => next(err))
+    .catch((err) => next(err));
     });
 
 module.exports = clothRouter;

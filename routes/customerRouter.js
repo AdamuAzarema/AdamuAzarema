@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
+var Customers = require('../models/customers');
 
 const customerRouter = express.Router();
 
@@ -8,44 +10,73 @@ customerRouter.use(bodyParser.json());
 
 customerRouter.route('/')
 
-    .all((req, res, next) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next();
-    })
     .get((req, res, next) => {
-        res.end('Will send all the customers to you!');
+        Customers.find(req.query)
+            .then((customers) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(customers);
+            }, (err) => next(err))
+        .catch((err) => next(err));
     })
     .post((req, res, next) => {
-        res.end('Will add the customer: ' + req.body.name + ' with details: ' + req.body.description);
+        Customers.create(req.body)
+            .then((customer) => {
+                console.log('Customer Created ', customer);
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(customer);
+            }, (err) => next(err))
+        .catch((err) => next(err));
     })
     .put((req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /customers');
     })
     .delete((req, res, next) => {
-        res.end('Deleting all customers');
+        Customers.remove({})
+            .then((resp) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(resp);
+            }, (err) => next(err))
+        .catch((err) => next(err));
     });
 
 customerRouter.route('/:customerId')
-    .all((req, res, next) => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/plain');
-        next();
-    })
+
     .get((req, res, next) => {
-        res.end('Will send details of the customer: ' + req.params.customerId + ' to you!');
+        Customers.findById(req.params.customerId)
+            .then((customer) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(customer);
+            }, (err) => next(err))
+    .catch((err) => next(err));
     })
     .post((req, res, next) => {
-        res.end('Will add the customer: ' + req.body.name + ' with details: ' + req.body.description);
+        res.statusCode = 403;
+        res.end('POST operation not supported on /leaders/' + req.params.customerId);
     })
     .put((req, res, next) => {
-        res.write('Updating the customer: ' + req.params.customerId);
-        res.end(' Will update the customer: ' + req.body.name +
-            ' with details: ' + req.body.description);
+        Customers.findByIdAndUpdate(req.params.customerId, {
+            $set: req.body
+        }, { new: true })
+            .then((customer) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(customer);
+            }, (err) => next(err))
+     .catch((err) => next(err));
     })
     .delete((req, res, next) => {
-        res.end('Deleting customer: ' + req.params.customerId);
+        Customers.findByIdAndRemove(req.params.customerId)
+            .then((resp) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(resp);
+            }, (err) => next(err))
+        .catch((err) => next(err));
     });
 
 module.exports = customerRouter;
