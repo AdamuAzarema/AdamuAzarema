@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+var authenticate = require('../authenticate');
 
 const Clothes = require('../models/clothes');
 
@@ -19,7 +20,7 @@ clothRouter.route('/')
             }, (err) => next(err))
     .catch((err) => next(err));
     })
-    .post((req, res, next) => {
+    .post(authenticate.verifyUser, (req, res, next) => {
         Clothes.create(req.body)
             .then((cloth) => {
                 console.log('Cloth Created ', cloth);

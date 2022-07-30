@@ -70,60 +70,40 @@ commentRouter.route('/:commentId')
         res.end('POST operation not supported on /comments/' + req.params.commentId);
     })
     .put((req, res, next) => {
-        Comments.findById(req.params.commentId)
-            .then((comment) => {
-                if (comment != null) {
-                    if (!comment.author.equals(req.user._id)) {
-                        var err = new Error('You are not authorized to update this comment!');
-                        err.status = 403;
-                        return next(err);
-                    }
-                    req.body.author = req.user._id;
-                    Comments.findByIdAndUpdate(req.params.commentId, {
-                        $set: req.body
-                    }, { new: true })
-                        .then((comment) => {
-                            Comments.findById(comment._id)
-                                .populate('author')
-                                .then((comment) => {
-                                    res.statusCode = 200;
-                                    res.setHeader('Content-Type', 'application/json');
-                                    res.json(comment);
-                                })
-                        }, (err) => next(err));
-                }
-                else {
-                    err = new Error('Comment ' + req.params.commentId + ' not found');
-                    err.status = 404;
-                    return next(err);
-                }
-            }, (err) => next(err))
-            .catch((err) => next(err));
+        var comment = new Comments
+        if(comment.author !== null){
+        Comments.findByIdAndUpdate(req.params.commentId,{
+        $set: req.body
+    }, { new: true })
+    .then((comment) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(comment);
+    }, (err) => next(err))
+    .catch((err) => next(err));
+}else {
+        var err = new Error('You are not authorized to update this comment!');
+        err.status = 403;
+        return next(err);
+}
     })
     .delete((req, res, next) => {
-        Comments.findById(req.params.commentId)
-            .then((comment) => {
-                if (comment != null) {
-                    if (!comment.author.equals(req.user._id)) {
-                        var err = new Error('You are not authorized to delete this comment!');
-                        err.status = 403;
-                        return next(err);
-                    }
+        var comment = Comments
+        if (comment.author !== null) {
                     Comments.findByIdAndRemove(req.params.commentId)
                         .then((resp) => {
                             res.statusCode = 200;
                             res.setHeader('Content-Type', 'application/json');
                             res.json(resp);
                         }, (err) => next(err))
-                        .catch((err) => next(err));
+                        .catch((err) => next(err));                  
                 }
                 else {
                     err = new Error('Comment ' + req.params.commentId + ' not found');
                     err.status = 404;
                     return next(err);
                 }
-            }, (err) => next(err))
-            .catch((err) => next(err));
-    });
-
+            }, (err) => next(err));
+            
+    
 module.exports = commentRouter;
